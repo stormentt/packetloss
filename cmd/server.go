@@ -1,5 +1,5 @@
 /*
-Copyright © 2022 NAME HERE <EMAIL ADDRESS>
+Copyright © 2022 Tanner Storment
 
 */
 package cmd
@@ -8,18 +8,14 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 // serverCmd represents the server command
 var serverCmd = &cobra.Command{
 	Use:   "server",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "Listen for UDP packets and Acknowledge them",
+	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("server called")
 	},
@@ -28,13 +24,9 @@ to quickly create a Cobra application.`,
 func init() {
 	rootCmd.AddCommand(serverCmd)
 
-	// Here you will define your flags and configuration settings.
+	serverCmd.Flags().StringP("local", "l", ":6666", "Local address to listen on")
+	serverCmd.Flags().StringP("key", "k", "", "Key to use for HMAC")
 
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// serverCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// serverCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	viper.BindPFlag("local", serverCmd.PersistentFlags().Lookup("local"))
+	viper.BindPFlag("key", serverCmd.PersistentFlags().Lookup("key"))
 }
