@@ -1,0 +1,14 @@
+syntax = "proto3";
+package packet;
+
+option go_package = "github.com/stormentt/packetloss/proto";
+
+message Packet {
+  enum PacketType {
+    REQPACKET = 0;
+    ACKPACKET = 1;
+  }
+
+  PacketType packet_type = 1;
+  uint64 serial = 2;
+}
