@@ -15,6 +15,8 @@ type wrapSerial struct {
 	ClientID string
 }
 
+// Listen listens for new packets and acks them, as well as keeping records
+// hkey is used to validate incoming messages via message authentication codes
 func Listen(hkey []byte, laddr *net.UDPAddr) error {
 	conn, err := net.ListenUDP("udp", laddr)
 	if err != nil {
@@ -96,6 +98,8 @@ func Listen(hkey []byte, laddr *net.UDPAddr) error {
 	return nil
 }
 
+// handleRecv receives packets from conn and acknowledges them
+// received serial numbers are sent over ch for record keeping
 func handleRecv(conn *net.UDPConn, hkey []byte, ch chan<- wrapSerial) {
 	for {
 		buff := make([]byte, 1024)

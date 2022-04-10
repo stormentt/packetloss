@@ -11,12 +11,15 @@ import (
 	wrapper "github.com/stormentt/packetloss/wrapper"
 )
 
+// wrapSerial
 type wrapSerial struct {
 	Serial uint64
 	Type   packet.PacketType
 }
 
-func Send(hkey []byte, raddr *net.UDPAddr) error {
+// Start sends UDP packets to raddr and keeps track of sent packets & acknowledgements.
+// hkey is used to create message authentication codes
+func Start(hkey []byte, raddr *net.UDPAddr) error {
 	conn, err := net.DialUDP("udp", nil, raddr)
 	if err != nil {
 		return nil
@@ -81,6 +84,9 @@ func Send(hkey []byte, raddr *net.UDPAddr) error {
 	return nil
 }
 
+// sendPackets sends packets to conn
+// hkey is used to create message authentication codes for these packets
+// sent packets have their serial numbers sent over ch, to be used for recordkeeping
 func sendPackets(conn *net.UDPConn, hkey []byte, ch chan<- wrapSerial) {
 	clientID := uuid.New()
 	var serial uint64 = 0
@@ -119,6 +125,9 @@ func sendPackets(conn *net.UDPConn, hkey []byte, ch chan<- wrapSerial) {
 	}
 }
 
+// recvPackets receives UDP packets from conn
+// hkey is used to validate incoming message authentication codes
+// received acknowledgements have their serial numbers sent over ch to be used for recordkeeping
 func recvPackets(conn *net.UDPConn, hkey []byte, ch chan<- wrapSerial) {
 	for {
 		buff := make([]byte, 1024)

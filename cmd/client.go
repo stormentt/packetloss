@@ -51,7 +51,7 @@ var clientCmd = &cobra.Command{
 			"hkey": fmt.Sprintf("%X", hkey),
 		}).Debug("using mac key")
 
-		err = client.Send(hkey[:], raddr)
+		err = client.Start(hkey[:], raddr)
 
 		if err != nil {
 			log.WithFields(log.Fields{

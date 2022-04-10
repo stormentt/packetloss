@@ -7,16 +7,20 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// StatsMap is a map of ClientIDs to statistics for individual clients
 type StatsMap struct {
 	internal map[string]*ServerStats
 }
 
+// NewStatsMap returns a new StatsMap object
 func NewStatsMap() *StatsMap {
 	return &StatsMap{
 		internal: make(map[string]*ServerStats),
 	}
 }
 
+// Get retrieves the statistics block for a specific ClientID
+// If the ClientID has never been seen before, it creates a new stats block
 func (sm *StatsMap) Get(client string) *ServerStats {
 	if stats, ok := sm.internal[client]; ok {
 		stats.LastUpdated = time.Now()
@@ -27,6 +31,7 @@ func (sm *StatsMap) Get(client string) *ServerStats {
 	}
 }
 
+// Print outputs every clients stats
 func (sm *StatsMap) Print() {
 	for client, stats := range sm.internal {
 		totalPackets := stats.Received + stats.Missed
@@ -43,6 +48,7 @@ func (sm *StatsMap) Print() {
 	}
 }
 
+// Cull removes old clients from the StatsMap
 func (sm *StatsMap) Cull() {
 	for id, stats := range sm.internal {
 		if stats.Cullable() {
@@ -71,6 +77,7 @@ func (stats *ServerStats) Reset() {
 	stats.LastUpdated = time.Now()
 }
 
+// Cullable returns true if the stats block hasn't been updated in 30 minutes
 func (stats *ServerStats) Cullable() bool {
 	if time.Since(stats.LastUpdated) > time.Minute*30 {
 		return true
