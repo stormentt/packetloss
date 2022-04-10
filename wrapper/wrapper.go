@@ -1,6 +1,7 @@
 package wrappers
 
 import (
+	"bytes"
 	"crypto/subtle"
 	"fmt"
 
@@ -38,11 +39,11 @@ func EncodePacket(p *packet.Packet, hkey []byte) ([]byte, error) {
 		"HMAC": fmt.Sprintf("%X", calc_hmac),
 	}).Debug("Calculated HMAC for Packet")
 
-	out := make([]byte, 64+len(data))
-	copy(out, calc_hmac)
-	copy(out[64:], data)
+	var out bytes.Buffer
+	out.Write(calc_hmac)
+	out.Write(data)
 
-	return out, nil
+	return out.Bytes(), nil
 }
 
 // DecodePacket takes a blob of data, validates it, and decodes it into a protobuf packet.
