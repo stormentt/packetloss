@@ -18,6 +18,7 @@ package cmd
 
 import (
 	"os"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -95,5 +96,8 @@ func init() {
 
 	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "config file (default is $HOME/packetloss.yaml)")
 	rootCmd.PersistentFlags().StringP("log-level", "v", "INFO", "level of verbosity (DEBUG, INFO, WARN, ERROR, FATAL)")
+	rootCmd.PersistentFlags().DurationP("update-time", "u", time.Minute*10, "time between printing updates")
+
+	viper.BindPFlag("update-time", rootCmd.PersistentFlags().Lookup("update-time"))
 	viper.BindPFlag("loglevel", rootCmd.PersistentFlags().Lookup("log-level"))
 }

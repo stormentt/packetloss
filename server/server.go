@@ -5,6 +5,7 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 	packet "github.com/stormentt/packetloss/packet"
 	wrapper "github.com/stormentt/packetloss/wrapper"
 )
@@ -89,7 +90,7 @@ func Listen(hkey []byte, laddr *net.UDPAddr) error {
 			lastCull = time.Now()
 		}
 
-		if time.Since(lastStatsPrint) > time.Minute*10 {
+		if time.Since(lastStatsPrint) > viper.GetDuration("update-time") {
 			sMap.Print()
 			lastStatsPrint = time.Now()
 		}

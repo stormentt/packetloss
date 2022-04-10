@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 	packet "github.com/stormentt/packetloss/packet"
 	wrapper "github.com/stormentt/packetloss/wrapper"
 )
@@ -66,7 +67,7 @@ func Start(hkey []byte, raddr *net.UDPAddr) error {
 			continue
 		}
 
-		if time.Since(lastRemediation) > time.Minute*10 {
+		if time.Since(lastRemediation) > viper.GetDuration("update-time") {
 			stats := cr.Remediate()
 			cr.Reset()
 			log.WithFields(log.Fields{

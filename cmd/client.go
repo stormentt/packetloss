@@ -65,11 +65,11 @@ var clientCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(clientCmd)
-
 	clientCmd.Flags().StringP("remote", "r", "localhost:6666", "Remote address to send packets to")
 	clientCmd.Flags().StringP("key", "k", "", "Key to use for HMAC")
 
-	viper.BindPFlag("remote", clientCmd.PersistentFlags().Lookup("remote"))
-	viper.BindPFlag("key", clientCmd.PersistentFlags().Lookup("key"))
+	viper.BindPFlag("remote", clientCmd.Flags().Lookup("remote"))
+	viper.BindPFlag("key", clientCmd.Flags().Lookup("key"))
+
+	rootCmd.AddCommand(clientCmd)
 }

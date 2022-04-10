@@ -62,11 +62,11 @@ var serverCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(serverCmd)
-
 	serverCmd.Flags().StringP("local", "l", ":6666", "Local address to listen on")
 	serverCmd.Flags().StringP("key", "k", "", "Key to use for HMAC")
 
-	viper.BindPFlag("local", serverCmd.PersistentFlags().Lookup("local"))
-	viper.BindPFlag("key", serverCmd.PersistentFlags().Lookup("key"))
+	viper.BindPFlag("local", serverCmd.Flags().Lookup("local"))
+	viper.BindPFlag("key", serverCmd.Flags().Lookup("key"))
+
+	rootCmd.AddCommand(serverCmd)
 }
