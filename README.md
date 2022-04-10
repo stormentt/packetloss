@@ -1,3 +1,5 @@
+[![Build](https://github.com/stormentt/packetloss/actions/workflows/go.yml/badge.svg)](https://github.com/stormentt/packetloss/actions/workflows/go.yml)
+
 # Overview
 Packetloss is a tool for measuring... well, packet loss. It operates in two modes, client and server.
 
