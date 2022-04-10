@@ -19,6 +19,7 @@ package cmd
 import (
 	"os"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -60,16 +61,44 @@ func initConfig() {
 		cobra.CheckErr(err)
 
 		// Search config in home directory with name ".cobra" (without extension).
+		viper.AddConfigPath(".")
 		viper.AddConfigPath(home)
-		viper.SetConfigType("yaml")
-		viper.SetConfigName(".packetloss")
+		viper.SetConfigType("yml")
+		viper.SetConfigName("packetloss")
+		err = viper.ReadInConfig()
+		if err != nil {
+			log.WithFields(log.Fields{
+				"Error": err,
+			}).Debug("no config file")
+		}
 	}
 }
+
+func initLogging() {
+	switch viper.GetString("loglevel") {
+	case "DEBUG":
+		log.SetLevel(log.DebugLevel)
+	case "INFO":
+		log.SetLevel(log.InfoLevel)
+	case "WARN":
+		log.SetLevel(log.WarnLevel)
+	case "ERROR":
+		log.SetLevel(log.ErrorLevel)
+	case "FATAL":
+		log.SetLevel(log.FatalLevel)
+	default:
+		log.SetLevel(log.InfoLevel)
+	}
+}
+
 func init() {
 	cobra.OnInitialize(initConfig)
+	cobra.OnInitialize(initLogging)
 	// Here you will define your flags and configuration settings.
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
 
-	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "config file (default is $HOME/.packetloss.yaml)")
+	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "config file (default is $HOME/packetloss.yaml)")
+	rootCmd.PersistentFlags().StringP("log-level", "v", "INFO", "level of verbosity (DEBUG, INFO, WARN, ERROR, FATAL)")
+	viper.BindPFlag("loglevel", rootCmd.PersistentFlags().Lookup("log-level"))
 }

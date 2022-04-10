@@ -3,12 +3,13 @@ package packet;
 
 option go_package = "github.com/stormentt/packetloss/proto";
 
-message Packet {
-  enum PacketType {
-    REQPACKET = 0;
-    ACKPACKET = 1;
-  }
+enum PacketType {
+  REQPACKET = 0;
+  ACKPACKET = 1;
+}
 
+message Packet {
   PacketType packet_type = 1;
   uint64 serial = 2;
+  string clientID = 3;
 }

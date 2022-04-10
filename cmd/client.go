@@ -18,9 +18,13 @@ package cmd
 
 import (
 	"fmt"
+	"net"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"github.com/stormentt/packetloss/client"
+	"golang.org/x/crypto/blake2b"
 )
 
 // clientCmd represents the client command
@@ -29,7 +33,34 @@ var clientCmd = &cobra.Command{
 	Short: "Send UDP packets to server and record acknowledgements",
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("client called")
+		remoteStr := viper.GetString("remote")
+		raddr, err := net.ResolveUDPAddr("udp", remoteStr)
+		if err != nil {
+			log.WithFields(log.Fields{
+				"Error":         err,
+				"RemoteAddress": remoteStr,
+			}).Fatal("could not resolve remote addr")
+		}
+
+		log.WithFields(log.Fields{
+			"RemoteAddress": remoteStr,
+		}).Info("sending packets")
+
+		hkey := blake2b.Sum512([]byte(viper.GetString("key")))
+		log.WithFields(log.Fields{
+			"hkey": fmt.Sprintf("%X", hkey),
+		}).Debug("using mac key")
+
+		err = client.Send(hkey[:], raddr)
+
+		if err != nil {
+			log.WithFields(log.Fields{
+				"Error":         err,
+				"RemoteAddress": remoteStr,
+			}).Fatal("could not send packets")
+		}
+
+		log.Info("finished")
 	},
 }
 

@@ -4,9 +4,10 @@ import (
 	"crypto/subtle"
 	"fmt"
 
-	proto "github.com/stormentt/packetloss/packet"
+	log "github.com/sirupsen/logrus"
+	packet "github.com/stormentt/packetloss/packet"
 	"golang.org/x/crypto/blake2b"
-	"golang.org/x/crypto/openpgp/packet"
+	"google.golang.org/protobuf/proto"
 )
 
 type CryptoError struct {
@@ -15,21 +16,25 @@ type CryptoError struct {
 }
 
 func (c *CryptoError) Error() string {
-	if c.Err != nil {
-		return fmt.Sprintf("crypto error: %s\n", c.Reason)
+	if c.Err == nil {
+		return fmt.Sprintf("crypto error: %s", c.Reason)
 	} else {
-		return fmt.Sprintf("crypto error: %s (%v)\n", c.Reason, c.Err)
+		return fmt.Sprintf("crypto error: %s (%v)", c.Reason, c.Err)
 	}
 }
 
-func EncodePacket(p packet.Packet, hkey []byte) ([]byte, error) {
+func EncodePacket(p *packet.Packet, hkey []byte) ([]byte, error) {
 	data, err := proto.Marshal(p)
 	if err != nil {
 		return nil, err
 	}
 
 	calc_hmac := make([]byte, 64)
-	err := hmac_data(calc_hmac, hkey, data)
+	err = hmac_data(calc_hmac, hkey, data)
+
+	log.WithFields(log.Fields{
+		"HMAC": fmt.Sprintf("%X", calc_hmac),
+	}).Debug("Calculated HMAC for Packet")
 
 	out := make([]byte, 64+len(data))
 	copy(out, calc_hmac)
@@ -38,12 +43,12 @@ func EncodePacket(p packet.Packet, hkey []byte) ([]byte, error) {
 	return out, nil
 }
 
-func DecodePacket(data []byte, hkey []byte, p *packet.Packet) error {
+func DecodePacket(data []byte, n int, hkey []byte, p *packet.Packet) error {
 	data_hmac := make([]byte, 64)
 	copy(data_hmac, data[:64])
 
 	calc_hmac := make([]byte, 64)
-	err := hmac_data(calc_hmac, hkey, data[64:])
+	err := hmac_data(calc_hmac, hkey, data[64:n])
 	if err != nil {
 		return &CryptoError{
 			Reason: "could not calculate hmac",
@@ -52,13 +57,18 @@ func DecodePacket(data []byte, hkey []byte, p *packet.Packet) error {
 	}
 
 	if subtle.ConstantTimeCompare(calc_hmac, data_hmac) != 1 {
+		log.WithFields(log.Fields{
+			"Calculated": fmt.Sprintf("%X", calc_hmac),
+			"Expected":   fmt.Sprintf("%X", data_hmac),
+		}).Debug("hash mismatch")
+
 		return &CryptoError{
 			Reason: "calculated hash and expected hash did not match",
 			Err:    nil,
 		}
 	}
 
-	err = proto.Unmarshal(data[64:], p)
+	err = proto.Unmarshal(data[64:n], p)
 	if err != nil {
 		return err
 	}

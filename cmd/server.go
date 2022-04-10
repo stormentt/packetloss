@@ -18,9 +18,13 @@ package cmd
 
 import (
 	"fmt"
+	"net"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"github.com/stormentt/packetloss/server"
+	"golang.org/x/crypto/blake2b"
 )
 
 // serverCmd represents the server command
@@ -29,7 +33,31 @@ var serverCmd = &cobra.Command{
 	Short: "Listen for UDP packets and Acknowledge them",
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("server called")
+		localStr := viper.GetString("local")
+		laddr, err := net.ResolveUDPAddr("udp", localStr)
+		if err != nil {
+			log.WithFields(log.Fields{
+				"Error":        err,
+				"LocalAddress": localStr,
+			}).Fatal("could not resolve listen addr")
+		}
+
+		hkey := blake2b.Sum512([]byte(viper.GetString("key")))
+
+		log.WithFields(log.Fields{
+			"hkey": fmt.Sprintf("%X", hkey),
+		}).Debug("using mac key")
+
+		err = server.Listen(hkey[:], laddr)
+
+		if err != nil {
+			log.WithFields(log.Fields{
+				"Error":        err,
+				"LocalAddress": localStr,
+			}).Fatal("could not listen")
+		}
+
+		log.Info("finished")
 	},
 }
 
