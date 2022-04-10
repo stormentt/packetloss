@@ -63,7 +63,7 @@ func Send(hkey []byte, raddr *net.UDPAddr) error {
 			continue
 		}
 
-		if time.Since(lastRemediation) > time.Minute*1 {
+		if time.Since(lastRemediation) > time.Minute*10 {
 			stats := cr.Remediate()
 			cr.Reset()
 			log.WithFields(log.Fields{
@@ -115,7 +115,7 @@ func sendPackets(conn *net.UDPConn, hkey []byte, ch chan<- wrapSerial) {
 
 		serial++
 
-		time.Sleep(500 * time.Millisecond)
+		time.Sleep(100 * time.Millisecond)
 	}
 }
 

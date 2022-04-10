@@ -87,7 +87,7 @@ func Listen(hkey []byte, laddr *net.UDPAddr) error {
 			lastCull = time.Now()
 		}
 
-		if time.Since(lastStatsPrint) > time.Minute*1 {
+		if time.Since(lastStatsPrint) > time.Minute*10 {
 			sMap.Print()
 			lastStatsPrint = time.Now()
 		}
