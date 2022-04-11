@@ -16,6 +16,8 @@ import (
 type wrapSerial struct {
 	Serial uint64
 	Type   packet.PacketType
+
+	Timestamp time.Time
 }
 
 // Start sends UDP packets to raddr and keeps track of sent packets & acknowledgements.
@@ -39,7 +41,7 @@ func Start(hkey []byte, raddr *net.UDPAddr) error {
 	for ws := range ch {
 		switch ws.Type {
 		case packet.PacketType_REQPACKET:
-			cr.Send(ws.Serial)
+			cr.Send(ws.Serial, ws.Timestamp)
 		case packet.PacketType_ACKPACKET:
 			if ws.Serial > cr.LastSent {
 				log.WithFields(log.Fields{
@@ -57,7 +59,7 @@ func Start(hkey []byte, raddr *net.UDPAddr) error {
 				continue
 			}
 
-			cr.Ack(ws.Serial)
+			cr.Ack(ws.Serial, ws.Timestamp)
 
 		default:
 			log.WithFields(log.Fields{
@@ -70,13 +72,27 @@ func Start(hkey []byte, raddr *net.UDPAddr) error {
 		if time.Since(lastRemediation) > viper.GetDuration("update-time") {
 			stats := cr.Remediate()
 			cr.Reset()
+
 			log.WithFields(log.Fields{
-				"Sent":          stats.Sent,
-				"Acked":         stats.Acked,
-				"Missed":        stats.Missed,
-				"MissedPercent": fmt.Sprintf("%0.2f", stats.MissedPercent),
-				"Timestamp":     time.Now(),
-			}).Info("stats")
+				"Total":        stats.Total,
+				"Sent":         stats.TotalSent,
+				"Acked":        stats.TotalAcked,
+				"SentAndAcked": stats.SentAndAcked,
+				"SentNotAcked": stats.SentNotAcked,
+				"AckedNotSent": stats.AckedNotSent,
+			}).Info("Totals")
+
+			log.WithFields(log.Fields{
+				"SentAndAcked": fmt.Sprintf("%.2f", stats.SAAPercent),
+				"SentNotAcked": fmt.Sprintf("%.2f", stats.SNAPercent),
+				"AckedNotSent": fmt.Sprintf("%.2f", stats.ANSPercent),
+			}).Info("Percents")
+
+			log.WithFields(log.Fields{
+				"Avg": stats.AvgRTT,
+				"Min": stats.MinRTT,
+				"Max": stats.MaxRTT,
+			}).Info("RTT")
 
 			lastRemediation = time.Now()
 		}
@@ -114,15 +130,16 @@ func sendPackets(conn *net.UDPConn, hkey []byte, ch chan<- wrapSerial) {
 		}
 
 		ws := wrapSerial{
-			Serial: serial,
-			Type:   packet.PacketType_REQPACKET,
+			Serial:    serial,
+			Type:      packet.PacketType_REQPACKET,
+			Timestamp: time.Now(),
 		}
 
 		ch <- ws
 
 		serial++
 
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(viper.GetDuration("packet-time"))
 	}
 }
 
@@ -139,6 +156,8 @@ func recvPackets(conn *net.UDPConn, hkey []byte, ch chan<- wrapSerial) {
 			}).Error("could not read from UDP conn")
 			continue
 		}
+
+		ts := time.Now()
 
 		log.WithFields(log.Fields{
 			"n":    n,
@@ -162,8 +181,9 @@ func recvPackets(conn *net.UDPConn, hkey []byte, ch chan<- wrapSerial) {
 		}
 
 		ws := wrapSerial{
-			Serial: p.Serial,
-			Type:   p.PacketType,
+			Serial:    p.Serial,
+			Type:      p.PacketType,
+			Timestamp: ts,
 		}
 
 		ch <- ws

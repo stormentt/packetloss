@@ -19,6 +19,7 @@ package cmd
 import (
 	"fmt"
 	"net"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -67,9 +68,11 @@ var clientCmd = &cobra.Command{
 func init() {
 	clientCmd.Flags().StringP("remote", "r", "localhost:6666", "Remote address to send packets to")
 	clientCmd.Flags().StringP("key", "k", "", "Key to use for HMAC")
+	clientCmd.Flags().DurationP("packet-time", "t", 100*time.Millisecond, "Time to wait between sending packets")
 
 	viper.BindPFlag("remote", clientCmd.Flags().Lookup("remote"))
 	viper.BindPFlag("key", clientCmd.Flags().Lookup("key"))
+	viper.BindPFlag("packet-time", clientCmd.Flags().Lookup("packet-time"))
 
 	rootCmd.AddCommand(clientCmd)
 }
