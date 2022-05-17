@@ -35,33 +35,11 @@ func Listen(hkey []byte, laddr *net.UDPAddr) error {
 	go handleRecv(conn, hkey, ch)
 
 	for ws := range ch {
-		stats := sMap.Get(ws.ClientID)
-
-		if stats.LastSerial >= ws.Serial {
-			if ws.Serial != 0 {
-				log.WithFields(log.Fields{
-					"LastSerial": stats.LastSerial,
-					"Serial":     ws.Serial,
-				}).Warn("packet received with old serial")
-			}
-
+		cmd := newRecvPacketCommand(ws)
+		err = cmd.Do(sMap)
+		if err != nil {
 			continue
 		}
-
-		dSerial := ws.Serial - stats.LastSerial
-		if dSerial > 1 {
-			log.WithFields(log.Fields{
-				"LastSerial": stats.LastSerial,
-				"Serial":     ws.Serial,
-				"dSerial":    dSerial,
-			}).Debug("recording missed packets")
-
-			stats.Missed += dSerial
-		}
-
-		stats.Received++
-		stats.LastSerial = ws.Serial
-		stats.LastUpdated = time.Now()
 
 		ackPacket := packet.Packet{
 			Serial:     ws.Serial,
@@ -81,9 +59,12 @@ func Listen(hkey []byte, laddr *net.UDPAddr) error {
 			log.WithFields(log.Fields{
 				"Error": err,
 			}).Error("could not send ack packet")
+
+			continue
 		}
 
-		stats.LastAck = ws.Serial
+		ackCmd := newAckPacketCommand(ws)
+		ackCmd.Do(sMap)
 
 		if time.Since(lastCull) > time.Minute*10 {
 			sMap.Cull()
@@ -126,19 +107,22 @@ func handleRecv(conn *net.UDPConn, hkey []byte, ch chan<- wrapSerial) {
 			continue
 		}
 
-		if p.PacketType != packet.PacketType_REQPACKET {
+		switch p.PacketType {
+		case packet.PacketType_REQPACKET:
+			ws := wrapSerial{
+				Serial:   p.Serial,
+				From:     addr,
+				ClientID: p.ClientID,
+			}
+
+			ch <- ws
+		case packet.PacketType_RESETPACKET:
+		default:
 			log.WithFields(log.Fields{
 				"type": p.PacketType.String(),
-			}).Warn("received a non-REQPACKET type packet")
+			}).Warn("received an unexpected packet type")
+
 			continue
 		}
-
-		ws := wrapSerial{
-			Serial:   p.Serial,
-			From:     addr,
-			ClientID: p.ClientID,
-		}
-
-		ch <- ws
 	}
 }

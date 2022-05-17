@@ -32,7 +32,7 @@ var (
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "packetloss",
-	Short: "Measure packetloss",
+	Short: "Measure packet loss by tracking UDP packets",
 	Long:  ``,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:

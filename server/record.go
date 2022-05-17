@@ -67,6 +67,16 @@ type ServerStats struct {
 	LastUpdated time.Time
 }
 
+func (stats *ServerStats) Clone(dest *ServerStats) {
+	dest.Received = stats.Received
+	dest.Missed = stats.Missed
+
+	dest.LastSerial = stats.LastSerial
+	dest.LastAck = stats.Received
+
+	dest.LastUpdated = stats.LastUpdated
+}
+
 func (stats *ServerStats) Reset() {
 	stats.Received = 0
 	stats.Missed = 0

@@ -6,6 +6,7 @@ option go_package = "github.com/stormentt/packetloss/proto";
 enum PacketType {
   REQPACKET = 0;
   ACKPACKET = 1;
+  RESETPACKET = 2;
 }
 
 message Packet {
