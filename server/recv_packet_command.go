@@ -21,27 +21,27 @@ func newRecvPacketCommand(ws wrapSerial) RecvPacketCommand {
 	}
 }
 
-func (rpc *RecvPacketCommand) Do(sm *StatsMap) error {
-	stats := sm.Get(rpc.ws.ClientID)
-	stats.Clone(rpc.oldStats)
+func (cmd *RecvPacketCommand) Do(sm *StatsMap) error {
+	stats := sm.Get(cmd.ws.ClientID)
+	stats.Clone(cmd.oldStats)
 
-	if stats.LastSerial >= rpc.ws.Serial {
+	if stats.LastSerial >= cmd.ws.Serial {
 		log.WithFields(log.Fields{
 			"LastSerial": stats.LastSerial,
-			"Serial":     rpc.ws.Serial,
+			"Serial":     cmd.ws.Serial,
 		}).Warn("packet received with old serial")
 
 		return RecvOldSerialErr{
 			LastSerial: stats.LastSerial,
-			Serial:     rpc.ws.Serial,
+			Serial:     cmd.ws.Serial,
 		}
 	}
 
-	dSerial := rpc.ws.Serial - stats.LastSerial
+	dSerial := cmd.ws.Serial - stats.LastSerial
 	if dSerial > 1 {
 		log.WithFields(log.Fields{
 			"LastSerial": stats.LastSerial,
-			"Serial":     rpc.ws.Serial,
+			"Serial":     cmd.ws.Serial,
 			"dSerial":    dSerial,
 		}).Info("missed packets")
 
@@ -49,15 +49,15 @@ func (rpc *RecvPacketCommand) Do(sm *StatsMap) error {
 	}
 
 	stats.Received++
-	stats.LastSerial = rpc.ws.Serial
+	stats.LastSerial = cmd.ws.Serial
 	stats.LastUpdated = time.Now()
 
 	return nil
 }
 
-func (rpc *RecvPacketCommand) Undo(sm *StatsMap) error {
-	stats := sm.Get(rpc.ws.ClientID)
-	rpc.oldStats.Clone(stats)
+func (cmd *RecvPacketCommand) Undo(sm *StatsMap) error {
+	stats := sm.Get(cmd.ws.ClientID)
+	cmd.oldStats.Clone(stats)
 
 	return nil
 }
