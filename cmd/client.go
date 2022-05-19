@@ -69,10 +69,12 @@ func init() {
 	clientCmd.Flags().StringP("remote", "r", "localhost:6666", "Remote address to send packets to")
 	clientCmd.Flags().StringP("key", "k", "", "Key to use for HMAC")
 	clientCmd.Flags().DurationP("packet-time", "t", 100*time.Millisecond, "Time to wait between sending packets")
+	clientCmd.Flags().StringP("client-id", "i", "", "ClientID to use for sending packets (default random UUID)")
 
 	viper.BindPFlag("remote", clientCmd.Flags().Lookup("remote"))
 	viper.BindPFlag("key", clientCmd.Flags().Lookup("key"))
-	viper.BindPFlag("packet-time", clientCmd.Flags().Lookup("packet-time"))
+	viper.BindPFlag("packet_time", clientCmd.Flags().Lookup("packet-time"))
+	viper.BindPFlag("client_id", clientCmd.Flags().Lookup("client-id"))
 
 	rootCmd.AddCommand(clientCmd)
 }

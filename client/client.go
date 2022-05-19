@@ -105,14 +105,28 @@ func Start(hkey []byte, raddr *net.UDPAddr) error {
 // hkey is used to create message authentication codes for these packets
 // sent packets have their serial numbers sent over ch, to be used for recordkeeping
 func sendPackets(conn *net.UDPConn, hkey []byte, ch chan<- wrapSerial) {
-	clientID := uuid.New()
+	clientID := viper.GetString("client_id")
+	if len(clientID) == 0 {
+		log.Debug("no client ID specified, generating random")
+		clientID = uuid.New().String()
+	}
+
+	if len(clientID) > 64 {
+		log.WithFields(log.Fields{
+			"ClientID": clientID,
+			"Length":   len(clientID),
+		}).Error("clientID length too long, max length 64")
+
+		return
+	}
+
 	var serial uint64 = 1
 
 	for {
 		p := &packet.Packet{
 			PacketType: packet.PacketType_REQPACKET,
 			Serial:     serial,
-			ClientID:   clientID.String(),
+			ClientID:   clientID,
 		}
 
 		data, err := wrapper.EncodePacket(p, hkey)
@@ -139,7 +153,7 @@ func sendPackets(conn *net.UDPConn, hkey []byte, ch chan<- wrapSerial) {
 
 		serial++
 
-		time.Sleep(viper.GetDuration("packet-time"))
+		time.Sleep(viper.GetDuration("packet_time"))
 	}
 }
 
