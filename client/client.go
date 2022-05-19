@@ -106,7 +106,7 @@ func Start(hkey []byte, raddr *net.UDPAddr) error {
 // sent packets have their serial numbers sent over ch, to be used for recordkeeping
 func sendPackets(conn *net.UDPConn, hkey []byte, ch chan<- wrapSerial) {
 	clientID := uuid.New()
-	var serial uint64 = 0
+	var serial uint64 = 1
 
 	for {
 		p := &packet.Packet{
