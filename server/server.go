@@ -74,7 +74,7 @@ func handleRecv(conn *net.UDPConn, hkey []byte, ch chan<- StatsCommand) {
 		log.WithFields(log.Fields{
 			"n":    n,
 			"addr": addr,
-		}).Debug("received packet")
+		}).Trace("received packet")
 
 		p := &packet.Packet{}
 		err = wrapper.DecodePacket(buff, n, hkey, p)
@@ -82,8 +82,15 @@ func handleRecv(conn *net.UDPConn, hkey []byte, ch chan<- StatsCommand) {
 			log.WithFields(log.Fields{
 				"error": err,
 			}).Error("could not decode packet")
+
 			continue
 		}
+
+		log.WithFields(log.Fields{
+			"PacketType": p.PacketType.String(),
+			"Serial":     p.Serial,
+			"ClientID":   p.ClientID,
+		}).Trace("decoded packet")
 
 		switch p.PacketType {
 		case packet.PacketType_REQPACKET:

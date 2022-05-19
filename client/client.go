@@ -122,25 +122,29 @@ func sendPackets(conn *net.UDPConn, hkey []byte, ch chan<- wrapSerial) {
 
 	var serial uint64 = 1
 
+	resetP := &packet.Packet{
+		PacketType: packet.PacketType_RESETPACKET,
+		Serial:     serial,
+		ClientID:   clientID,
+	}
+
+	err := sendPacket(conn, hkey, resetP)
+	if err != nil {
+		return
+	}
+
 	for {
+		time.Sleep(viper.GetDuration("packet_time"))
+
 		p := &packet.Packet{
 			PacketType: packet.PacketType_REQPACKET,
 			Serial:     serial,
 			ClientID:   clientID,
 		}
 
-		data, err := wrapper.EncodePacket(p, hkey)
+		err = sendPacket(conn, hkey, p)
 		if err != nil {
-			log.WithFields(log.Fields{
-				"Error": err,
-			}).Fatal("unable to encode packet")
-		}
-
-		_, err = conn.Write(data)
-		if err != nil {
-			log.WithFields(log.Fields{
-				"Error": err,
-			}).Fatal("unable to send packet")
+			continue
 		}
 
 		ws := wrapSerial{
@@ -153,8 +157,29 @@ func sendPackets(conn *net.UDPConn, hkey []byte, ch chan<- wrapSerial) {
 
 		serial++
 
-		time.Sleep(viper.GetDuration("packet_time"))
 	}
+}
+
+func sendPacket(conn *net.UDPConn, hkey []byte, p *packet.Packet) error {
+	data, err := wrapper.EncodePacket(p, hkey)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"Error": err,
+		}).Error("unable to encode packet")
+
+		return err
+	}
+
+	_, err = conn.Write(data)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"Error": err,
+		}).Error("unable to send packet")
+
+		return err
+	}
+
+	return nil
 }
 
 // recvPackets receives UDP packets from conn
