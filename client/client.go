@@ -115,7 +115,7 @@ func sendPackets(conn *net.UDPConn, hkey []byte, ch chan<- wrapSerial) {
 		log.WithFields(log.Fields{
 			"ClientID": clientID,
 			"Length":   len(clientID),
-		}).Error("clientID length too long, max length 64")
+		}).Fatal("clientID length too long, max length 64")
 
 		return
 	}
