@@ -19,6 +19,10 @@ type wrapSerial struct {
 // Listen listens for new packets and acks them, as well as keeping records
 // hkey is used to validate incoming messages via message authentication codes
 func Listen(hkey []byte, laddr *net.UDPAddr) error {
+	log.WithFields(log.Fields{
+		"UpdateTime": viper.GetDuration("update-time"),
+		"CullTime":   viper.GetDuration("cull_time"),
+	}).Debug("server params")
 	conn, err := net.ListenUDP("udp", laddr)
 	if err != nil {
 		return err
@@ -44,7 +48,7 @@ func Listen(hkey []byte, laddr *net.UDPAddr) error {
 			continue
 		}
 
-		if time.Since(lastCull) > time.Minute*10 {
+		if time.Since(lastCull) > viper.GetDuration("cull_time") {
 			sMap.Cull()
 			lastCull = time.Now()
 		}

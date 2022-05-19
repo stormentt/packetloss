@@ -19,6 +19,7 @@ package cmd
 import (
 	"fmt"
 	"net"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -64,9 +65,11 @@ var serverCmd = &cobra.Command{
 func init() {
 	serverCmd.Flags().StringP("local", "l", ":6666", "Local address to listen on")
 	serverCmd.Flags().StringP("key", "k", "", "Key to use for HMAC")
+	serverCmd.Flags().Duration("cull-time", time.Minute*10, "time between culling server stats")
 
 	viper.BindPFlag("local", serverCmd.Flags().Lookup("local"))
 	viper.BindPFlag("key", serverCmd.Flags().Lookup("key"))
+	viper.BindPFlag("cull_time", serverCmd.Flags().Lookup("cull-time"))
 
 	rootCmd.AddCommand(serverCmd)
 }

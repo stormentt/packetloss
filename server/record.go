@@ -33,6 +33,7 @@ func (sm *StatsMap) Get(client string) *ServerStats {
 
 // Print outputs every clients stats
 func (sm *StatsMap) Print() {
+	log.Trace("StatsMap.Print()")
 	for client, stats := range sm.internal {
 		totalPackets := stats.Received + stats.Missed
 		percentLoss := float64(stats.Missed) / float64(totalPackets) * 100.0
@@ -50,6 +51,8 @@ func (sm *StatsMap) Print() {
 
 // Cull removes old clients from the StatsMap
 func (sm *StatsMap) Cull() {
+	log.Trace("StatsMap.Cull()")
+
 	for id, stats := range sm.internal {
 		if stats.Cullable() {
 			delete(sm.internal, id)
