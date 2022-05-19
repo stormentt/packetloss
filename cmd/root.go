@@ -72,6 +72,8 @@ func initConfig() {
 
 func initLogging() {
 	switch viper.GetString("loglevel") {
+	case "TRACE":
+		log.SetLevel(log.TraceLevel)
 	case "DEBUG":
 		log.SetLevel(log.DebugLevel)
 	case "INFO":
