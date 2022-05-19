@@ -31,40 +31,18 @@ func Listen(hkey []byte, laddr *net.UDPAddr) error {
 	lastCull := time.Now()
 	lastStatsPrint := time.Now()
 
-	ch := make(chan wrapSerial, 10)
+	ch := make(chan StatsCommand, 10)
 	go handleRecv(conn, hkey, ch)
 
-	for ws := range ch {
-		cmd := newRecvPacketCommand(ws)
+	for cmd := range ch {
 		err = cmd.Do(sMap)
 		if err != nil {
-			continue
-		}
-
-		ackPacket := packet.Packet{
-			Serial:     ws.Serial,
-			PacketType: packet.PacketType_ACKPACKET,
-			ClientID:   ws.ClientID,
-		}
-
-		data, err := wrapper.EncodePacket(&ackPacket, hkey)
-		if err != nil {
 			log.WithFields(log.Fields{
 				"Error": err,
-			}).Error("could not encode ack packet")
-		}
-
-		_, err = conn.WriteTo(data, ws.From)
-		if err != nil {
-			log.WithFields(log.Fields{
-				"Error": err,
-			}).Error("could not send ack packet")
+			}).Error("unable to execute command")
 
 			continue
 		}
-
-		ackCmd := newAckPacketCommand(ws)
-		ackCmd.Do(sMap)
 
 		if time.Since(lastCull) > time.Minute*10 {
 			sMap.Cull()
@@ -82,7 +60,7 @@ func Listen(hkey []byte, laddr *net.UDPAddr) error {
 
 // handleRecv receives packets from conn and acknowledges them
 // received serial numbers are sent over ch for record keeping
-func handleRecv(conn *net.UDPConn, hkey []byte, ch chan<- wrapSerial) {
+func handleRecv(conn *net.UDPConn, hkey []byte, ch chan<- StatsCommand) {
 	for {
 		buff := make([]byte, 1024)
 		n, addr, err := conn.ReadFromUDP(buff)
@@ -115,8 +93,19 @@ func handleRecv(conn *net.UDPConn, hkey []byte, ch chan<- wrapSerial) {
 				ClientID: p.ClientID,
 			}
 
-			ch <- ws
+			reqCmd := newRecvPacketCommand(ws)
+			ch <- reqCmd
+
+			sendAck(conn, hkey, ch, ws)
 		case packet.PacketType_RESETPACKET:
+			ws := wrapSerial{
+				Serial:   p.Serial,
+				From:     addr,
+				ClientID: p.ClientID,
+			}
+
+			resetCmd := newResetPacketCommand(ws)
+			ch <- resetCmd
 		default:
 			log.WithFields(log.Fields{
 				"type": p.PacketType.String(),
@@ -125,4 +114,34 @@ func handleRecv(conn *net.UDPConn, hkey []byte, ch chan<- wrapSerial) {
 			continue
 		}
 	}
+}
+
+func sendAck(conn *net.UDPConn, hkey []byte, ch chan<- StatsCommand, ws wrapSerial) {
+	ackPacket := packet.Packet{
+		Serial:     ws.Serial,
+		PacketType: packet.PacketType_ACKPACKET,
+		ClientID:   ws.ClientID,
+	}
+
+	data, err := wrapper.EncodePacket(&ackPacket, hkey)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"Error": err,
+		}).Error("could not encode ack packet")
+
+		return
+	}
+
+	_, err = conn.WriteTo(data, ws.From)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"Error": err,
+		}).Error("could not send ack packet")
+
+		return
+	}
+
+	ackCmd := newAckPacketCommand(ws)
+
+	ch <- ackCmd
 }

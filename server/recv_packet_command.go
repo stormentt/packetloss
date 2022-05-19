@@ -12,10 +12,10 @@ type RecvPacketCommand struct {
 	oldStats *ServerStats
 }
 
-func newRecvPacketCommand(ws wrapSerial) RecvPacketCommand {
+func newRecvPacketCommand(ws wrapSerial) *RecvPacketCommand {
 	oldStats := &ServerStats{}
 
-	return RecvPacketCommand{
+	return &RecvPacketCommand{
 		ws,
 		oldStats,
 	}
